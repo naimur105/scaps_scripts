@@ -1,0 +1,173 @@
+// SCAPS script
+clear all
+clear scriptvariables.all
+clear actions
+set errorhandling.appendtofile
+action dark
+
+// change the def file here,once for all
+set scriptvariable.filename MASnI3_MAPbI3_tandem_revision.def
+
+load definitionfile filename
+// a (any) calculation is needed to get the mesh; an equilibrium calculation is enough
+calculate equilibrium_only 
+get layer2.rightindex dindex
+get layer2.rightx dvalue
+
+// set the x-offsets for top and bottom cell
+// if illuminated from left
+//set scriptvariable.tvalue 0
+//set scriptvariable.bvalue dvalue
+// if illuminated fromright
+set scriptvariable.tvalue dvalue
+set scriptvariable.bvalue 0
+
+set scriptvariable.maxiteration 10
+math filllinear.fixednumberofpoints p 0.1 1 maxiteration // the parameter (Rb) comes in pvector
+set scriptvariable.pname Rback (%)
+// set the the appropriate contact (=back) to "reflection"
+set contactleft.opticalfilter.reflection // illumination from right
+//set contactright.opticalfilter.reflection // illumination from left
+//show scriptvariables
+action iv.startv 0 
+action iv.stopv 1.2
+action iv.stopaftervoc 
+action spectrumfile AM1_5G 1 sun.spe
+
+// reserve memory for efficiency results, initialise to zero, and give nice names
+math fillconstant A 0 maxiteration
+math fillconstant C 0 maxiteration
+math fillconstant D 0 maxiteration
+math fillconstant H 0 maxiteration
+math fillconstant K 0 maxiteration
+math fillconstant M 0 maxiteration
+math fillconstant N 0 maxiteration
+math fillconstant Q 0 maxiteration
+math fillconstant E 0 maxiteration
+math fillconstant O 0 maxiteration
+math fillconstant S 0 maxiteration
+math fillconstant F 0 maxiteration
+math fillconstant J 0 maxiteration
+math fillconstant Z 0 maxiteration
+// set nice names for the script vectors
+set scriptvariable.ename eff(tandem), %
+set scriptvariable.oname Voc(tandem), V
+set scriptvariable.sname Jsc(tandem), mA/cm2
+set scriptvariable.fname FF(tandem), %
+set scriptvariable.aname eff(top), %
+set scriptvariable.cname Voc(top), V
+set scriptvariable.dname Jsc(top), mA/cm2
+set scriptvariable.hname FF(top), %
+set scriptvariable.kname eff(bottom), %
+set scriptvariable.mname Voc(bottom), V
+set scriptvariable.nname Jsc(bottom), mA/cm2
+set scriptvariable.qname FF(bottom), %
+set scriptvariable.zname P(tandem), mW/cm2
+set scriptvariable.jname Pin, W/m2 (?)
+
+loop start
+
+load definitionfile filename
+// set the parameter (=back reflection Rb) to the appropriate conatct
+set contactleft.opticalfilter.value pvector[loopcounter] // illumination from right
+// set contactright.opticalfilter.value pvector[loopcounter] // illumination from left
+
+//action dark
+//action iv.checkaction 0
+//action qe.checkaction 0
+//calculate singleshot 
+
+math split_tandem_cell.adapt_contact_filters 3 4 // splt at  2 3 without BSF; 3 4 with BSF
+runsystem run_update_maxiter.bat
+
+//show scriptvariables 
+action light
+action iv.doiv
+action iv.stopaftervoc 
+action qe.doqe
+
+load definitionfile.temporary.top_cell 
+calculate singleshot 
+get iv vt
+set scriptvariable.vname V(top), V
+set scriptvariable.tname J(top), mA/cm2
+plot draw vt // the IV curve of the top cell
+
+get characteristics.eta avector[loopcounter]
+get characteristics.voc cvector[loopcounter]
+get characteristics.jsc dvector[loopcounter]
+get characteristics.ff hvector[loopcounter]
+
+// get gx xg
+// set scriptvariable.xname top x (µm)
+// set scriptvariable.gname top G (#/cm3/s)
+// math vectoroffset XX tvalue // offset the position x in the top x-vector to correspond with the position in the original tandem
+// plot xg
+// show scriptvariables 
+
+load definitionfile.temporary.bottom_cell 
+calculate singleshot 
+
+get iv ub
+set scriptvariable.uname V(bottom cell), V
+set scriptvariable.bname J(bottom cell), mA/cm2
+plot draw ub // the IV curve of the bottom cell
+
+get characteristics.eta kvector[loopcounter]
+get characteristics.voc mvector[loopcounter]
+get characteristics.jsc nvector[loopcounter]
+get characteristics.ff qvector[loopcounter]
+
+// get gx yh
+// set scriptvariable.yname bottom x (µm)
+// set scriptvariable.hname bottom G (#/cm3/s)
+// math vectoroffset YY bvalue // offset the position x in the bottom x-vector to correspond with the position in the original tandem
+// plot yh
+// show scriptvariables 
+
+// do the series (tandem) connection
+math series WIVTUB 200
+set scriptvariable.wname V(tandem), V
+set scriptvariable.iname J(tandem), mA/cm2
+plot draw wi // the (constructed) IV curve of the tandem cell
+
+// also register the power delivered by the tandem
+math vectormultiply zwi
+math vectorchange_sign zz
+plot draw wz
+get action.pin.in_cell jvalue // also register Pin
+set scriptvariable.jvector[loopcounter] jvalue
+
+math characteristics.eta eWI
+math characteristics.voc oWI
+math characteristics.jsc sWI
+math characteristics.ff fWI
+set scriptvariable.evector[loopcounter] evalue
+set scriptvariable.ovector[loopcounter] ovalue
+set scriptvariable.svector[loopcounter] svalue
+set scriptvariable.fvector[loopcounter] fvalue
+//show scriptvariables 
+
+// show scriptvariables 
+loop stop
+
+// plot the efficiency parameters
+// top cell
+plot draw pa
+plot draw pc
+plot draw pd
+plot draw ph
+// bottom cell
+plot draw pk
+plot draw pm
+plot draw pn
+plot draw pq
+// tandem cell
+plot draw pe
+plot draw po
+plot draw ps
+plot draw pf
+// incident power
+plot draw pj
+
+show scriptvariables 
