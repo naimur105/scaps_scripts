@@ -1,7 +1,7 @@
 # scaps_scripts
 This repo contains some SCAPS script files and bug fixes.
 
-Calculating the Filtered spectrum from the top cell of a tandem solar cell using SCAPS-1D
+# Calculating the Filtered spectrum from the top cell of a tandem solar cell using SCAPS-1D
 	Tandem Device construction
  ![image](https://github.com/naimur105/scaps_scripts/assets/58659352/cd5bbbf5-a3ab-4fc2-baf1-5aedc2860bdd)
 
