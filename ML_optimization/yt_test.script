@@ -1,0 +1,13 @@
+//my script for YT
+
+load allscapssettingsfile yt_test_all_settings.scaps
+
+set script_display_mode.fully_suppressed
+
+calculate singleshot 
+
+save results.iv yt_save.iv
+
+set quitscript.quitscaps 
+
+
